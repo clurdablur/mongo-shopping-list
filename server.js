@@ -22,17 +22,28 @@ app.get('/items', function(req, res) {
     });
 });
 
-app.put('/items/:id', function(req, res){
-    console.log(req.params);
-    console.log(req.body);
-    Item.findOneAndUpdate({_id: req.params.id}, {name: req.body.name}, function(err, item) {
+app.put('/items/:id', function(req, res) {
+    var _id = mongoose.Types.ObjectId(req.params.id);
+    Item.findOneAndUpdate({
+        _id: _id
+    }, {
+        $set: {
+            name: req.body.name
+        }
+    }, {
+        new: true
+    }, function(err, item) {
         if (err || !item) {
             console.error("Could not update item", req.body.name);
             mongoose.disconnect();
-            return;
+            if (err) {
+                return res.status(500).json({
+                    message: 'Internal Server Error'
+                })
+            }
         }
         console.log("Updated item", item.name);
-        mongoose.disconnect();
+        res.status(201).json(item);
     });
 })
 
@@ -48,6 +59,24 @@ app.post('/items', function(req, res) {
         res.status(201).json(item);
     });
 });
+
+
+app.delete('/items/:id', function(req, res) {
+    var _id = mongoose.Types.ObjectId(req.params.id);
+    Item.remove({
+        _id: _id
+    }, function(err, item) {
+        if (err || !item) {
+            console.error("Could not delete item", req.body.name);
+            mongoose.disconnect();
+            return;
+        }
+        console.log("Deleted item", item.result);
+        res.status(201).json(item);
+    });
+})
+
+
 
 app.use('*', function(req, res) {
     res.status(404).json({
